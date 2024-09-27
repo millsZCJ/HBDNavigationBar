@@ -665,7 +665,26 @@ void printViewHierarchy(UIView *view, NSString *prefix) {
 }
 
 - (CGRect)fakeBarFrameForViewController:(UIViewController *)vc {
-    CGRect frame = CGRectMake(0, 0, self.navigationBar.frame.size.width, UIApplication.sharedApplication.statusBarFrame.size.height + self.navigationBar.frame.size.height);
+    UIView *back = self.navigationBar.subviews[0];
+    if (@available(iOS 18.0, *)) {
+        back.frame = CGRectMake(0, 0, UIApplication.sharedApplication.statusBarFrame.size.width, UIApplication.sharedApplication.statusBarFrame.size.height + self.navigationBar.frame.size.height);
+    }
+    CGRect frame = [self.navigationBar convertRect:back.frame toView:vc.view];
+    frame.origin.x = 0;
+    if ((vc.edgesForExtendedLayout & UIRectEdgeTop) == 0) {
+        frame.origin.y = -frame.size.height;
+    }
+
+    // fix issue for pushed to UIViewController whose root view is UIScrollView.
+    if ([vc.view isKindOfClass:[UIScrollView class]]) {
+        UIScrollView *scrollView = (UIScrollView *) vc.view;
+        scrollView.clipsToBounds = NO;
+        if (scrollView.contentOffset.y == 0) {
+            frame.origin.y = -frame.size.height;
+        }
+    }
+
+//    CGRect frame = CGRectMake(0, 0, self.navigationBar.frame.size.width, UIApplication.sharedApplication.statusBarFrame.size.height + self.navigationBar.frame.size.height);
     return frame;
 }
 
